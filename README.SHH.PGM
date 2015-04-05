@@ -1,0 +1,77 @@
+AI ACQ196 AO ACQ2106 attempt #1
+
+External clock 1MHz
+Externl trg free run
+External signal to AI01, want output AO01
+No Joy :-(.
+
+NB tlatches wrong
+
+LLC_CLK=ext EXTCLKDIV=4 ./test-scripts/llc-test-harness-intclk-AO4-DO5 
+
+./test-scripts/setup-2GI-4GO 100 100 100000
+
+
+
+Try an all in one script
+
+./test-scripts/setup-2GI-4GO-all 100 100 100000
+ 	
+
+                       MOD_ID.0x00 0x41000006
+                     DAC_CTRL.0x04 0x00000305
+                     TIM_CTRL.0x08 0x00808005
+                   DAC_LOTIDE.0x0c 0x10000100
+             DAC_FIFO_SAMPLES.0x10 0x00000000
+                 DAC_FIFO_STA.0x14 0x0000010c
+                  DAC_INT_CSR.0x18 0x10000000
+                  DAC_CLK_CTR.0x1c 0x0f233228
+               DAC_SAMPLE_CTR.0x20 0x00000000
+                   DAC_CLKDIV.0x40 0x00000004
+                 DAC_424_CGEN.0x44 0x00000000
+		
+
+NB: DAC_SAMPLE_CTR.0x20 goes non-zero when it's working
+
+LLC_TRG ext option: ext
+LLC_CLK ext option: ext
+SLOT:100 CLKDIV:100 SAMPLES:100000
+OUTBOX pizza2
+setting ext trigger trg=1,0,1 external d0 RISING
+setting external clock / 4
+
+
+
+
+
+
+
+for commands using SLOT:100 for data RTM_DEVNUM:0
+pid 6633's current affinity mask: 7
+pid 6633's new affinity mask: 10
+waiting for front-panel trigger :
+DEBUG set 0
+Life is not simple
+Hello World
+AO host buffer mapping 0x8f0f8000
+AO_LLC set buffer pa: 0x72000000
+running with hb 0x7f1d8f0f8000
+maxlen set 104857600000064 100
+000000c8 200
+0000012c 300
+00000190 400
+000001f4 500
+00000258 600
+000002bc 700
+00000320 800
+00000384 900
+000003e8 1000
+FIRST 100 LAST 10000000
+HIT RETURN to clean up
+
+
+*** Hitting return cleans up the DAC process, resetting the counter.
+
+
+
+

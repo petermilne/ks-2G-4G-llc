@@ -1,0 +1,65 @@
+RTM-T HOSTDRV
+
+Host side driver for RTM-T and ACQ-FIBER-HBA
+
+Any questions?: please contact me any time:
+peter.milne@d-tacq.com
+
+Please review main instructions at:
+./html/index.html
+
+
+RTM-T:
+rtm-t.ko : 
+
+auto loaded by depmod.
+Creates the RTM-T mailbox regs, DMA device, HOST buffers and SLIP UART
+
+Before running any of the example apps eg rtm-t-stream-disk, review the
+site-specific setups in testscripts/rc.local.
+This file controls device permissions and mounts disk drives as required;
+this will almost certainly need to be customized for your local environment.
+
+
+ACQ-FIBER-HBA
+rtm-t.ko : 
+
+auto loaded by depmod.
+Creates the RTM-T mailbox regs, DMA device, HOST buffers and SLIP UART
+
+There's also i2c condition monitoring for SFP modules:
+
+Valid for SFP modules Avago: AFBR-57R5APZ
+
+
+./testscripts/avago_monitor [BUS]
+
+FLASHING RTM-T:
+Flash upgrade controlled by the acq using /usr/local/care/rtm-t_flash
+
+FLASHING ACQ-FIBER-HBA:
+It's probably best to set up a custom driver with SPI support for this purpose.
+The SPI interface brings in a lot of modules that probably aren't helpful
+dependencies in normal use.
+
+
+make ACQ_FHBA_SPI=1
+
+NB: mtd/* spi/* are copies of CENTOS5.5 code, patched.
+NB: build mtd-utils
+
+IDEALLY, these modules will be pre-built for your kernel in the normal way.
+Otherwise, some hacking is to be expected.
+
+STUB normal rtm-t.ko autoload and proceed as follows:
+
+./test-scripts/load.flash_device
+
+copy flash image acqfiber_hba_top.bit to current directory
+
+./test-scripts/acq-fiber-hba_flash
+Y
+
+<takes 30s>
+
+
