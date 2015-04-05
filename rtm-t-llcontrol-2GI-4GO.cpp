@@ -22,6 +22,7 @@
 
 /** @file rtm-t-llcontrol.cpp demonstrates llcontrol with ACQ196/RTM-T.
  NEW!! ACQ196 IN, ACQ2106 OUT!
+ * uses 2 x host buffers for CPU copy (more realistic emulation of PCS)
  * llcontrol with rtm-t is a simplified version of ACQ196/SYNC2V.
  - data direction is INPUT ONLY.
  - on the ACQ196 UUT, run /usr/local/CARE/rtm_t_llc_debug
@@ -159,19 +160,17 @@ void auto_trigger(int sense)
 	fclose(fp);
 }
 
-volatile u32 *hb;
 
-unsigned init_ao()
+
+short* init_ao()
 /* configure the ACQ2106 to PULL data from the AI buffer (zero copy) 
  * hack alert .. this is hard coded to AI dev 0, AO dev 2
  * returns buffer pa
  */
 {
-	int fd;
         char fname[80];
         sprintf(fname, HB_FILE, AO_DEVNUM);
-        fd = open(fname, O_RDWR);
-	void* hbv;
+        int fd = open(fname, O_RDWR);
         if (fd < 0){
                 perror(fname);
                 exit(errno);
@@ -180,13 +179,12 @@ unsigned init_ao()
 	xllc_def.len = VO_LEN;
 
 	fprintf(stderr, "Hello World\n");
-        hbv = mmap(0, HB_LEN, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-        if (hbv == (caddr_t)-1 ){
+        short* hb = (short *)mmap(0, HB_LEN, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+        if ((caddr_t)hb == (caddr_t)-1 ){
                 perror( "mmap" );
                 exit(errno);
         }else{
-		fprintf(stderr, "AO host buffer mapping 0x%08x\n", hbv);
-		hb = (volatile u32 *)hbv;
+		fprintf(stderr, "AO host buffer mapping 0x%08x\n", hb);
 	}
 
         if (ioctl(fd, AFHBA_START_AO_LLC, &xllc_def)){
@@ -194,8 +192,30 @@ unsigned init_ao()
                 exit(1);
         }else{
 		fprintf(stderr, "AO_LLC set buffer pa: 0x%08x\n", xllc_def.pa);
-		return xllc_def.pa;
+		return hb;
 	}
+}
+
+
+short* init_ai(int fd)
+{
+	short *hb = (short *)mmap(0, HB_LEN, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+        if ((caddr_t)hb == (caddr_t)-1 ){
+                perror( "mmap" );
+                exit(errno);
+        }else{
+		fprintf(stderr, "AI host buffer mapping 0x%08x\n", hb);
+	}
+	int rc = ioctl(fd, RTM_T_START_LLC, &llc_def);
+	dbg(1, "ioctl complete ..");
+
+	if (rc != 0){
+		err("ioctl RTM_T_START_LLC failed %d", rc);
+		_exit(-rc);
+	}
+
+	return hb;
+
 }
 int llcontrol() {
 	u32 tlatches[3];
@@ -216,25 +236,16 @@ int llcontrol() {
 		goRealTime();
 	}
 
-	ao_buffer_pa = init_ao();
-	fprintf(stderr, "running with hb %p\n", hb);
+	short* hb_ao = init_ao();
+	fprintf(stderr, "running with hb_ao %p\n", hb_ao);
+
+	u32* hb = (u32*)init_ai(dev->getDeviceHandle());
+	volatile u32* hbv = hb;
 	tlatch2 = hb[TLATCH_OFFSET] = 0xdeadbeef;
 
 
-	llc_def.target_pa = ao_buffer_pa;
-
-	int rc = ioctl(dev->getDeviceHandle(), RTM_T_START_LLC, &llc_def);
-
-
-	dbg(1, "ioctl complete ..");
-
-	if (rc != 0){
-		err("ioctl RTM_T_START_LLC failed %d", rc);
-		_exit(-rc);
-	}
-
 	for (int sample = 0; sample < samples; ++sample){
-		while ((tlatch1 = hb[TLATCH_OFFSET]) == tlatch2){
+		while ((tlatch1 = hbv[TLATCH_OFFSET]) == tlatch2){
 			if (sample == 0){
 				if (trigger_bit >= 0){
 					auto_trigger(1);
@@ -242,18 +253,21 @@ int llcontrol() {
 				}
 			}
 		}
+
+		/* copy : ai->ao, tlatch->DO32 */
+		memcpy(hb_ao, hb, AO_CHAN*sizeof(short));
+		memcpy(hb_ao+AO_CHAN, &tlatch, sizeof(unsigned));
 		if (sample == 0){
 			tlatch = 0;
 		}
+
+		/* compute extended tlatch and store */
 		tlatch = llv2_extend32(tlatch, tlatch1);
 		//tlatch = tlatch1;
 		memcpy(tlbuffer+sample*2, tlatches, sizeof(u32)*2);
 		//fwrite(tlatches, sizeof(u32), 2, fp);
 		dbg(2, "%d %u", sample, tlatch);
 		tlatch2 = tlatch1;
-short *sptr;
-sptr = (short *)&hb[0];
-//fprintf(stderr,">> %d: %d %d\n",tlatch,sptr[0],sptr[1]);
 	}
 
 	munlockall();
