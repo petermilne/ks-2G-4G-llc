@@ -235,11 +235,6 @@ int llcontrol() {
 
 	for (int sample = 0; sample < samples; ++sample){
 		while ((tlatch1 = hb[TLATCH_OFFSET]) == tlatch2){
-/*
-			if (yield){
-				sched_yield();
-			}
-*/
 			if (sample == 0){
 				if (trigger_bit >= 0){
 					auto_trigger(1);
