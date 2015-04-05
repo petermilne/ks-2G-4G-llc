@@ -1,0 +1,34 @@
+#!/bin/sh
+BUS=${1:-2}
+
+MODS=/lib/modules/$(uname -r)/kernel/
+
+if [ ! -c /dev/i2c-2 ]; then
+	/sbin/insmod $MODS/drivers/i2c/algos/i2c-algo-bit.ko
+	/sbin/insmod $MODS/drivers/i2c/i2c-dev.ko
+
+	FHBA_I2C=acq_fiber_hba_i2c_bus
+	grep -q $FHBA_I2C /proc/modules
+	if [ $? ]; then
+		if [ ! -f $FHBA_I2C.ko ]; then
+			if [ -f $MODS/d-tacq/$FHBA_I2C.ko ]; then
+				FHBA_I2C=$MODS/d-tacq/$FHBA_I2C.ko
+			else
+				echo module missing: $FHBA_I2C.ko
+			fi
+		fi
+		/sbin/insmod $FHBA_I2C.ko
+	fi
+fi
+i2cdump-dec $BUS 0x51 b | awk '
+{ 
+	FMT="%10s:%7.2f %s\n";
+	if (NR==1+(96/16)) { 
+		printf(FMT, "Temp", ($1*256+$2)/256, "C");
+		printf(FMT, "VCC", ($3*256+$4)/10000.0, "V");
+		printf(FMT, "Tx Bias", ($5*256+$6)/2, "uA");
+		printf(FMT, "Tx Power", ($7*256+$8)*0.1, "uW");
+		printf(FMT, "Rx Pwr", ($9*256+$10)*0.1, "uW");
+	 } 
+}'
+

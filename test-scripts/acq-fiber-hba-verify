@@ -1,0 +1,51 @@
+#!/bin/sh
+# flash program rtm-t
+
+BF=${BF:-acqfiber_hba_top.bit}
+DEV=${1:-0}
+FD=/dev/mtd$DEV
+
+export PATH=$PATH:./mtd-utils
+
+if [ -c $FD ]; then
+	echo Verify $FD with $BF \?
+	echo -n y/N:;read ANS
+	if [ "$ANS" != "Y" -a "$ANS" != "y" ];then
+		exit 1
+	fi
+else
+	echo ERROR flash device $FD NOT FOUND
+	exit 1
+fi
+
+len() {
+        ls -l $1 | awk '{print $5}'
+}
+
+
+if [ ! -e $BF ]; then
+	echo ERROR BITFILE $BF does not exist
+	exit 1
+fi
+
+echo BF:$BF FD:$FD
+
+#flash_erase $FD 0 0
+dd if=$BF bs=8 skip=15 of=$BF.strip
+ls -l $BF.strip
+#dd if=$FD bs=$(len $BF.strip) count=1 of=$BF.erase
+#cp $BF.strip $FD
+dd if=$FD bs=$(len $BF.strip) count=1 of=$BF.copy
+dd if=$FD bs=$(len $BF.strip) count=1 of=$BF.copy2
+cmp $BF.strip $BF.copy
+CMPSTAT=$?
+md5sum $BF.*
+
+if [ $CMPSTAT -eq 0 ]; then
+	rm $BF.*
+	echo SUCCESS
+	exit 0
+fi
+
+
+

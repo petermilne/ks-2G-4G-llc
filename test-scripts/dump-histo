@@ -1,0 +1,9 @@
+#!/bin/bash
+
+HISTO=${1:-/dev/rtm-t.0.fifo_histo.desc}
+
+echo Histogram for $HISTO
+hexdump -e '"%_ad : " 1/4 "%8d\n"' $HISTO | \
+	awk ' {if ($0 == "*") print $1; else printf("%10d : %d\n", $1/4, $3); }'
+
+

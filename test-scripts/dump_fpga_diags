@@ -1,0 +1,2 @@
+#!/bin/bash
+./test-scripts/dump_regs | grep ^0*[61]0:

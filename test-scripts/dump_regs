@@ -1,0 +1,3 @@
+DEV=${1:-0}
+hexdump -ve '"%08_ax: " 4/4 "%08x " "\n"' /dev/rtm-t.$DEV.regs
+

@@ -1,0 +1,25 @@
+#!/bin/bash
+# rc.local: customize computer for rtm-t use.
+# needs customisation for local site.
+
+# set user to standard dt100 if available
+# searching passwd only effective on systems using /etc/passwd ..
+# this is meant to happen in the hotplug script (but doesn't)
+grep -q dt100 /etc/passwd || /usr/bin/id dt100 2>/dev/null 1>/dev/null
+if [ $? -eq 0 ]; then
+	DT100_UID=dt100
+	DT100_GRP=dt100
+	chown -R ${DT100_UID}.${DT100_GID} /dev/rtm-t.*
+	chmod -R ug+rw /dev/rtm-t.*
+else
+  	chmod a+rw /dev/rtm-t.* 
+fi
+
+# echo mount ramdisk
+sudo mount -t tmpfs none /mnt/disk -o size=1024M
+
+# mount flash disk
+sudo mkdir -p /mnt/flashdisk
+sudo mount /dev/sda1 /mnt/flashdisk
+
+

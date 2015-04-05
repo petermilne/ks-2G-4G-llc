@@ -1,0 +1,25 @@
+#!/bin/sh
+	
+mount | grep -q /mnt/disk
+if [ $? -ne 0 ] ; then
+	sudo mount -t tmpfs none /mnt/disk -o size=256M
+fi
+
+SLOT=${1:-100}
+shift
+
+HN=$(acqcmd -s $SLOT hostname)
+
+OR=/mnt/disk/$HN
+mkdir -p $OR
+
+let DN="$SLOT % 100"
+
+acqcmd -s $SLOT set.dtacq simulate 1
+
+export RTM_PUT_DATA=1 RECYCLE=1 RTM_DEVNUM=${DN} OUTROOT=${OR} 
+export RTM_VERBOSE=0
+
+rtm-t-stream-disk | hbsplit | checkramp
+
+

@@ -1,0 +1,72 @@
+#!/usr/bin/perl 
+# elastic-copy from-prefix to-prefix
+# takes output filename stream from stream-to-elastic-store
+# moves files to another destination
+# example:
+# export RTM_PUT_DATA=1
+# CUSTOMIZE rc.local to suit your computer
+# source ./bin/rc.local
+# stream-to-elastic-store 100 35000 | \
+# ... stream from card 100, max 35k blocks
+# ./bin/elastic-copy /mnt/disk /mnt/flashdisk/RAW/ \
+# | bash -o verbose
+# mv data from /mnt/disk (ramdisk) to /mnt/flashdisk/RAW/ (ssd)
+# NB: this is not the most efficient script, but it shows the idea.
+
+use File::Copy qw(move);
+use File::Path qw(mkpath);
+
+my $from=$ARGV[0];
+my $to=$ARGV[1];
+
+shift;shift;
+#print "$from=>$to\n";
+
+my $countup=-1;
+my $old_seq=0;
+my $dest="";
+
+# trim any trailing sep
+if (substr($to,length($to)-1,1) eq '/'){
+	chop $to;
+}
+if (substr($from,length($from)-1,1) eq '/'){
+	chop  $from;
+}
+$from =~ s/\.id//;
+# easier to use regex if file sep is not '/'
+$from =~ s/\//%/g;
+
+
+#print "$from=>$to\n";
+
+while(<>){
+	my $file = $_;
+	chomp $file;
+	my $src = $file;
+	$src =~ s/\//%/g;	
+#	print "Testing: $from \"$src\"\n";
+
+	$rc = my ($acq, $seq, $buf) = $src =~ /$from%(acq196_[0-9]{3})%([0-9]{6})%(.*).id/;
+
+	if ($rc == 3){
+		$file =~ s/\.id//;
+		$file =~ s/%/\//g;
+	
+		if ($countup < 0 || $seq < $old_seq){		
+			$countup += $old_seq + 1;
+		}
+		$newseq = $countup + $seq;
+		if ($old_seq != $seq){
+			$dest = sprintf("$to/$acq/%06d", $newseq);
+			mkpath $dest or 
+				die "ERROR: failed to create $dest";
+			print "$dest\n";
+			$old_seq = $seq;	
+		}
+		move "$file", "$dest" or 
+			die "Error move $file $dest";
+		move "$file.id", "$dest" or 
+			die "Error move $file $dest";
+	}
+}

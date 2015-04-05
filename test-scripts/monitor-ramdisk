@@ -1,0 +1,15 @@
+#!/bin/bash
+
+HN=$(acqcmd -s 100 hostname)
+let TH=${1:-4}
+
+echo monitoring /mnt/disk/$HN/
+while [ 1 ] 
+do
+	let backlog=$(find /mnt/disk/$HN/ -name 0.?? | wc -l)
+	if [ $backlog -gt $TH ]; then
+		echo backlog $(date) $backlog
+	fi
+	sleep 1
+done
+

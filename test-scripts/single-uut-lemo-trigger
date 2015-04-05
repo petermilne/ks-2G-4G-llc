@@ -1,0 +1,22 @@
+#!/bin/bash
+# runs the example #3.2.2 from RTM-T User Guide
+SLOT=${1:-100}
+CLKHZ=${CLKHZ:-500000}
+CBM=${CBM:-111}
+
+echo setInternalClock ${CLKHZ}
+acqcmd -b ${SLOT} setInternalClock ${CLKHZ}
+acqcmd -s ${SLOT} set.channelBlockMask ${CBM}
+acqcmd -s ${SLOT} set.route d3 in lemo out fpga
+acqcmd -s ${SLOT} set.trig DI3 rising
+acqcmd -b ${SLOT} setMode SOFT_CONTINUOUS 1024
+acqcmd -b ${SLOT} setArm
+
+echo ready for external trigger now
+
+
+echo -n stop\>;read STUFF
+acqcmd -b ${SLOT} setAbort
+
+
+

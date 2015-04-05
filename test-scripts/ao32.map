@@ -1,0 +1,6 @@
+# map file for AO32
+
+regs /dev/rtm-t.1.regs 0 0x10000 rw 0
+pbi  /dev/rtm-t.1.pbi  0 0x10000 rw 0
+uart /dev/rtm-t.1.uart 0 0x10000 rw 0
+fifo /dev/rtm-t.1.fifo 0 0x10000 rw 0

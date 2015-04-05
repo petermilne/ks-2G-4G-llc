@@ -1,0 +1,5 @@
+#!/bin/bash
+SLOT=${1:-100}
+
+nc $(rtm-t-host 100) 53535
+

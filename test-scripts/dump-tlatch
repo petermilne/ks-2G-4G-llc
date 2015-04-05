@@ -1,0 +1,4 @@
+#!/bin/bash
+
+hexdump -ve '1/4 "%08x " 1/4 "%d\n"' /tmp/tlatch
+

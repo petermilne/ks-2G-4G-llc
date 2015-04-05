@@ -1,0 +1,15 @@
+#!/bin/bash
+
+export PATH=$PATH:~dt100/bin
+
+SRC=${1:-0}.00
+RAW=${RAW:-/mnt/disk/000000}
+TMP=/mnt/disk/COOKED
+
+while [ 1 ]; do
+	inotifywait -q -e close $RAW/$SRC
+	cp $RAW/$SRC $TMP
+	acq_demux -a acq196.def -O $TMP/ $TMP/$SRC
+done
+
+

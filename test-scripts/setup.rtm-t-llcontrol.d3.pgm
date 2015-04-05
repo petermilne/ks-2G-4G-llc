@@ -1,0 +1,61 @@
+#!/bin/bash
+
+SLOT=${1:-100}
+CLKDIV=${2:-100}
+SAMPLES=${3:-1000}
+
+rm -f /tmp/tlatch
+
+
+echo SLOT:$SLOT CLKDIV:$CLKDIV SAMPLES:$SAMPLES
+
+
+ACQCMD="acqcmd -b $SLOT "
+ACQ2SH="acqcmd -s $SLOT "
+
+
+set.rtm-t dio_bit_3 0
+set.rtm-t lowlat 256
+
+$ACQ2SH set.int_clk_src DI0 falling
+$ACQ2SH	set.ext_clk DI1 falling
+$ACQ2SH set.mas_clk DO1
+$ACQ2SH set.dtacq dio_bit 1 1
+$ACQ2SH set.trig DI3 falling
+$ACQ2SH set.route d0 in lemo out fpga
+$ACQ2SH set.route d3 in rio out fpga
+
+
+echo set.rtm-t dio_bit_3 P
+echo running program in foreground
+export YIELD=0 TRIGGER_BIT=3 CLKDIV=$CLKDIV SAMPLES=$SAMPLES RTM_DEBUG=$RTM_DEBUG 
+strace ./rtm-t-llcontrol 
+
+echo Trigger command:
+#echo set.rtm-t dio_bit_3 0
+
+wait
+
+if [ ! -e /tmp/tlatch ]; then
+	echo /tmp/tlatch does not exist
+	exit 1
+fi
+./test-scripts/dump-tlatch | head
+TL1=$(./test-scripts/dump-tlatch | head -n 1 | awk '{ print $2 }' )
+TL2=$(./test-scripts/dump-tlatch | tail -n 1 | awk '{ print $2 }' )
+
+echo FIRST $TL1 LAST $TL2
+
+if [ "x$TL1" = "x" ]; then
+	exit
+fi
+
+let TLAST=$CLKDIV*$SAMPLES
+
+if [ $TL1 -ne $CLKDIV ]; then
+        echo ERROR in TLATCH 1 wanted $CLKDIV got $TL1
+        exit -1
+elif [ $TL2 -ne $TLAST ]; then
+        echo ERROR in TLATCH $SAMPLES wanted $TLAST got $TL2
+fi
+

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+CB=${1:-192.168.1.229}
+acqcmd.ip -s $CB hostname
+acqcmd.ip -s $CB set.route d0 in fpga out pxi
+acqcmd.ip -s $CB set.dtacq dio_bit "0 1"
+acqcmd.ip -s $CB set.route d1 in pxi out fpga
+acqcmd.ip -s $CB acqcmd setInternalClock 1000000 DO0
+

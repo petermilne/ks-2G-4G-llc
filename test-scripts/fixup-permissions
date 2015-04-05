@@ -1,0 +1,6 @@
+#!/bin/bash
+# set file permissions (hotplug fails to do this)
+
+sudo chgrp -R wheel /dev/shm /dev/rtm*
+sudo chmod g+w /dev/shm
+

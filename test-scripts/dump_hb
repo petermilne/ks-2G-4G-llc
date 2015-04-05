@@ -1,0 +1,8 @@
+#!/bin/bash
+
+DEV=${DEV:-0}
+hb=${1:-00}
+
+./mmap -f /dev/rtm-t.${DEV}.data/hb$hb | \
+	hexdump -e '"%08_ax: " 4/4 "%08x " "\n"'
+

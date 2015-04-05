@@ -1,0 +1,25 @@
+ID=0
+DEVROOT=/sys/kernel/debug/afhba
+
+DEV=${DEVROOT}/afhba.${ID}
+
+
+set_sys() {
+	knob=$1;shift
+	logger -t set_sys ${DEV}/${knob} $*
+	echo $* >${DEV}/${knob}
+}
+
+get_sys() {
+	knob=$1
+	RB=$(cat ${DEV}/${knob})
+	logger -t get_sys ${DEV}/${knob} $RB
+	echo $RB 
+}
+
+remote_cmd() {
+        SITE=$1;shift
+        let PORT="4220+$SITE"
+        logger -t rem_cmd $REMIP $PORT $*
+        echo $* | nc $REMIP $PORT
+}

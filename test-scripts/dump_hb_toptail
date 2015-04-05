@@ -1,0 +1,7 @@
+#!/bin/bash
+
+hb=${1:-0}
+
+./dump_hb $hb | head -n 3
+./dump_hb $hb | tail -n 3
+

@@ -1,0 +1,32 @@
+#!/bin/bash
+
+export PATH=$PATH:~dt100/bin
+
+let DEV=${1:-0}
+if [ $DEV -ge 100 ]; then
+	SLOT=$DEV
+	let DEV="$DEV % 100"
+else
+	let SLOT="100 + $DEV"
+fi
+
+SRC=${DEV}.00
+HN=$(acqcmd -s $SLOT hostname)
+ROOT=${ROOT:-/mnt/disk/$HN}
+RAW=${ROOT}/000000
+TMP=$ROOT
+
+do_demux() {
+	while [ 1 ]
+	do
+		read FILE
+		cp $FILE $TMP
+		source $FILE.id
+		acq_demux -a acq196.def -T 2000 -t $HTIME -O $TMP/ $TMP/$SRC
+	done
+}
+
+inotifywait --format %w -m -q -e close $RAW/$SRC | do_demux
+
+
+

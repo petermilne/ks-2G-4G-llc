@@ -1,0 +1,20 @@
+#!/bin/bash
+# loads device driver support for ACQ-FIBER-HBA 
+# NB: needed for firmware upgrade ONLY
+# NB: please stub normal load of rtm-t.ko
+# eg
+# /etc/modprobe.d/blacklist
+
+MODS=/lib/modules/$(uname -r)/kernel/drivers
+
+/sbin/insmod spi/spi.ko
+/sbin/insmod spi/spi_bitbang.ko
+/sbin/insmod $MODS/mtd/mtdcore.ko
+/sbin/insmod $MODS/mtd/mtdpart.ko
+/sbin/insmod $MODS/mtd/mtd_blkdevs.ko
+/sbin/insmod $MODS/mtd/mtdchar.ko
+
+/sbin/insmod mtd/devices/m25p80.ko
+
+/sbin/insmod rtm-t-ACQ_FHBA_SPI.ko
+

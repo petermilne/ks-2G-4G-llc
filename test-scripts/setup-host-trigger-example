@@ -1,0 +1,50 @@
+#!/bin/bash
+
+INTCLK=500000
+
+configure_pxi_master() {
+	dev=$1
+	DEV=$dev set.rtm-t dio_bit 3 0
+	acqcmd -s $dev set.route d3 in rio out fpga pxi
+}
+configure_pxi_slave() {
+	dev=$1
+	acqcmd -s $dev set.route d3 in pxi out fpga
+}
+
+configure() {
+	dev=$1
+	role=$2
+
+	acqcmd -b $dev setInternalClock $INTCLK
+	acqcmd -s $dev set.channelBlockMask 111
+
+	acqcmd -s $dev -- set.dtacq dio_bit 3 -
+	if [ "$role" = "MASTER" ]; then
+		configure_pxi_master $dev
+	else
+		configure_pxi_slave $dev
+	fi
+	acqcmd -s $dev set.trig DI3 rising
+	acqcmd -b $dev setMode SOFT_CONTINUOUS 1024
+}
+
+
+ROLE=MASTER
+MB=$1
+
+for dev in $*
+do
+	echo configure $dev $(acqcmd -s $dev hostname) ROLE=$ROLE ..
+	configure $dev $ROLE
+	ROLE=SLAVE
+done
+
+for dev in $*
+do
+	echo arm $dev
+	acqcmd -b $dev setArm
+done
+
+echo trigger
+DEV=$MB set.rtm-t dio_bit 3 1

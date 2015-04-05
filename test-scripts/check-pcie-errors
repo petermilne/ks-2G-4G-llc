@@ -1,0 +1,4 @@
+#!/bin/bash
+echo address, error count, last error code, max latency 66MHz ticks
+./test-scripts/dump_regs | grep ^00*60
+

@@ -1,0 +1,37 @@
+#!/bin/bash
+
+mount | grep /mnt/disk
+if [ $? -ne 0 ] ; then
+	sudo mount -t tmpfs none /mnt/disk -o size=256M
+	sudo chown dt100.dt100 /mnt/disk
+fi
+
+PATH=$PATH:/home/dt100/bin
+
+LOOPS=${2:-100}
+TIME_ON=${3:-60}
+export RTM_DEVNUM=${1:-0}
+
+trigger() {
+	echo trigger $1
+	set.rtm-t dio_bit 3 $1
+}
+
+let shot=0
+
+trigger 1
+
+while [ $shot -lt $LOOPS ];
+do
+	echo Starting shot $shot
+	RECYCLE=1 OUTROOT=/mnt/disk ./rtm-t-stream-disk  >/dev/null 2>/dev/null &
+	pid=$!
+	sleep 2
+	trigger 0
+	sleep $TIME_ON
+	trigger 1; kill -9 $pid 2>/dev/null
+	wait
+	cat /dev/rtm-t.${RTM_DEVNUM}.ctrl/job
+	let shot=$shot+1
+	sleep 1
+done
