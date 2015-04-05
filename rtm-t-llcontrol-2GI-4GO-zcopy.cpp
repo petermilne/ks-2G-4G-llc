@@ -74,7 +74,7 @@ int VERBOSE = 1;
 
 int SSIZE = sizeof(short) * 96;
 
-int yield = 1;
+int yield = 0;
 int trigger_bit = -1;
 int sched_fifo_priority = 0;
 int acq200_debug = 0;
@@ -241,6 +241,7 @@ int llcontrol() {
 					trigger_bit = -1;
 				}
 			}
+			if (yield) sched_yield();
 		}
 		if (sample == 0){
 			tlatch = 0;
