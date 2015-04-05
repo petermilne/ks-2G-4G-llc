@@ -62,6 +62,9 @@ rtm-t-llcontrol-2GI-4GO-zcopy: rtm-t-llcontrol-2GI-4GO-zcopy.o RTM_T_Device.o
 rtm-t-llcontrol-2GI-4GO: rtm-t-llcontrol-2GI-4GO.o RTM_T_Device.o
 	$(CXX) -g -o rtm-t-llcontrol-2GI-4GO rtm-t-llcontrol-2GI-4GO.o RTM_T_Device.o -lpopt
 
+rtm-t-llcontrol-2GI-2GI-4GO: rtm-t-llcontrol-2GI-2GI-4GO.o RTM_T_Device.o
+	$(CXX) -g -o rtm-t-llcontrol-2GI-4GO rtm-t-llcontrol-2GI-2GI-4GO.o RTM_T_Device.o -lpopt
+
 rtm-t-feedback_1AI_2AO: rtm-t-feedback_1AI_2AO.o RTM_T_Device.o
 	$(CXX) -g -o rtm-t-feedback_1AI_2AO rtm-t-feedback_1AI_2AO.o \
 		RTM_T_Device.o -lpopt
@@ -69,7 +72,8 @@ rtm-t-feedback_1AI_2AO: rtm-t-feedback_1AI_2AO.o RTM_T_Device.o
 	
 APPS=mmap rtm-t-stream-disk inet_ntoa rtm-t-llcontrol \
 	rtm-t-feedback rtm-t-feedback_1AI_2AO \
-	rtm-t-llcontrol-2GI-4GO rtm-t-llcontrol-2GI-4GO-zcopy
+	rtm-t-llcontrol-2GI-4GO rtm-t-llcontrol-2GI-4GO-zcopy \
+	rtm-t-llcontrol-2GI-2GI-4GO
 
 apps: $(APPS)
 

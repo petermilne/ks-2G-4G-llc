@@ -255,13 +255,6 @@ int llcontrol() {
 			if (yield) sched_yield();
 		}
 
-		/* copy : ai->ao, tlatch->DO32 */
-		memcpy(hb_ao, hb, AO_CHAN*sizeof(short));
-		memcpy(hb_ao+AO_CHAN, &tlatch, sizeof(unsigned));
-		if (sample == 0){
-			tlatch = 0;
-		}
-
 		/* compute extended tlatch and store */
 		tlatch = llv2_extend32(tlatch, tlatch1);
 		//tlatch = tlatch1;
@@ -269,6 +262,13 @@ int llcontrol() {
 		//fwrite(tlatches, sizeof(u32), 2, fp);
 		dbg(2, "%d %u", sample, tlatch);
 		tlatch2 = tlatch1;
+
+		/* copy : ai->ao, tlatch->DO32 */
+		memcpy(hb_ao, hb, AO_CHAN*sizeof(short));
+		memcpy(hb_ao+AO_CHAN, &tlatch, sizeof(unsigned));
+		if (sample == 0){
+			tlatch = 0;
+		}
 	}
 
 	munlockall();

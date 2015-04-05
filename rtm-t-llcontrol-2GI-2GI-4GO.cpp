@@ -23,6 +23,7 @@
 /** @file rtm-t-llcontrol.cpp demonstrates llcontrol with ACQ196/RTM-T.
  NEW!! ACQ196 IN, ACQ2106 OUT!
  * uses 2 x host buffers for CPU copy (more realistic emulation of PCS)
+ * supports 2 x ACQ196.
  * llcontrol with rtm-t is a simplified version of ACQ196/SYNC2V.
  - data direction is INPUT ONLY.
  - on the ACQ196 UUT, run /usr/local/CARE/rtm_t_llc_debug
@@ -87,7 +88,8 @@ const char* OUTROOT = "/mnt";
 #define LLCV2_STATUS_TLATCH 6     /** TLATCH {11:0} */
 
 #define TLATCH_OFFSET ((3 * 16) + LLCV2_STATUS_TLATCH)	/* longwords */
-static RTM_T_Device *dev;
+static RTM_T_Device *dev1;
+static RTM_T_Device *dev2;
 
 int samples = 100;
 
@@ -150,7 +152,7 @@ void auto_trigger(int sense)
 {
 	char dio_knob[80];
 
-	sprintf(dio_knob, "%s/dio_bit_%d", dev->getControlRoot(), trigger_bit);
+	sprintf(dio_knob, "%s/dio_bit_%d", dev1->getControlRoot(), trigger_bit);
 	FILE *fp = fopen(dio_knob, "w");
 	if (!fp){
 		perror("failed to open knob");
@@ -239,9 +241,10 @@ int llcontrol() {
 	short* hb_ao = init_ao();
 	fprintf(stderr, "running with hb_ao %p\n", hb_ao);
 
-	u32* hb = (u32*)init_ai(dev->getDeviceHandle());
-	volatile u32* hbv = hb;
-	tlatch2 = hb[TLATCH_OFFSET] = 0xdeadbeef;
+	short* ai1 = init_ai(dev1->getDeviceHandle());
+	short* ai2 = init_ai(dev2->getDeviceHandle());
+	volatile u32* hbv = (volatile u32*)ai1;
+	tlatch2 = hbv[TLATCH_OFFSET] = 0xdeadbeef;
 
 
 	for (int sample = 0; sample < samples; ++sample){
@@ -255,12 +258,6 @@ int llcontrol() {
 			if (yield) sched_yield();
 		}
 
-		/* copy : ai->ao, tlatch->DO32 */
-		memcpy(hb_ao, hb, AO_CHAN*sizeof(short));
-		memcpy(hb_ao+AO_CHAN, &tlatch, sizeof(unsigned));
-		if (sample == 0){
-			tlatch = 0;
-		}
 
 		/* compute extended tlatch and store */
 		tlatch = llv2_extend32(tlatch, tlatch1);
@@ -269,6 +266,16 @@ int llcontrol() {
 		//fwrite(tlatches, sizeof(u32), 2, fp);
 		dbg(2, "%d %u", sample, tlatch);
 		tlatch2 = tlatch1;
+
+		/* copy : ai1+ai2->ao, tlatch->DO32 */
+		for (int ii = 0; ii < AO_CHAN; ++ii){
+			hb_ao[ii] = ai1[ii]/2 + ai2[ii]/2;
+		}
+		memcpy(hb_ao+AO_CHAN, &tlatch, sizeof(unsigned));
+		if (sample == 0){
+			tlatch = 0;
+		}
+
 	}
 
 	munlockall();
@@ -288,10 +295,14 @@ static void init_defaults(int argc, char* argv[])
 
 	int nbuffers = 1;
 
-	if (getenv("RTM_DEVNUM")){
-		devnum = atol(getenv("RTM_DEVNUM"));
+	if (getenv("RTM_DEVNUM1")){
+		devnum = atol(getenv("RTM_DEVNUM1"));
 	}
-	dev = new RTM_T_Device(devnum, nbuffers);
+	dev1 = new RTM_T_Device(devnum, nbuffers);
+	if (getenv("RTM_DEVNUM2")){
+		devnum = atol(getenv("RTM_DEVNUM2"));
+	}
+	dev2 = new RTM_T_Device(devnum, nbuffers);
 
 	if (getenv("RTM_MAXITER")){
 		MAXITER = atol(getenv("RTM_MAXITER"));
