@@ -199,16 +199,9 @@ short* init_ao()
 }
 
 
-short* init_ai(int fd)
+short* init_ai(RTM_T_Device *dev)
 {
-	short *hb = (short *)mmap(0, HB_LEN, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-        if ((caddr_t)hb == (caddr_t)-1 ){
-                perror( "mmap" );
-                exit(errno);
-        }else{
-		fprintf(stderr, "AI host buffer mapping 0x%08x\n", hb);
-	}
-	int rc = ioctl(fd, RTM_T_START_LLC, &llc_def);
+	int rc = ioctl(dev->getDeviceHandle(), RTM_T_START_LLC, &llc_def);
 	dbg(1, "ioctl complete ..");
 
 	if (rc != 0){
@@ -216,7 +209,7 @@ short* init_ai(int fd)
 		_exit(-rc);
 	}
 
-	return hb;
+	return static_cast<short*>(dev->getHostBufferMapping(0));
 
 }
 int llcontrol() {
@@ -241,8 +234,8 @@ int llcontrol() {
 	short* hb_ao = init_ao();
 	fprintf(stderr, "running with hb_ao %p\n", hb_ao);
 
-	short* ai1 = init_ai(dev1->getDeviceHandle());
-	short* ai2 = init_ai(dev2->getDeviceHandle());
+	short* ai1 = init_ai(dev1);
+	short* ai2 = init_ai(dev2);
 	volatile u32* hbv = (volatile u32*)ai1;
 	tlatch2 = hbv[TLATCH_OFFSET] = 0xdeadbeef;
 

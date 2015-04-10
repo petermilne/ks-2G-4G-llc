@@ -55,7 +55,7 @@ public:
 	const char *getRegsDevice(void) {
 		return names[MINOR_REGREAD].c_str();
 	}
-	const void *getHostBufferMapping(int ibuf = 0) {
+	void *getHostBufferMapping(int ibuf = 0) {
 		return host_buffers[ibuf];
 	}
 
