@@ -63,6 +63,7 @@ using namespace std;
 #include <sched.h>
 
 #include "rtm-t_ioctl.h"
+#include "acq196_channel_map.h"
 
 /* default: never completes */
 int MAXITER	       = 0xffffffff;
@@ -261,8 +262,10 @@ int llcontrol() {
 		tlatch2 = tlatch1;
 
 		/* copy : ai1+ai2->ao, tlatch->DO32 */
-		for (int ii = 0; ii < AO_CHAN; ++ii){
-			hb_ao[ii] = ai1[ii]/2 + ai2[ii]/2;
+		for (int ch = 1; ch <= AO_CHAN; ++ch){
+			hb_ao[ch-1] = 
+				ai1[ACQ196_CH_MAP[ch]]/2 + 
+				ai2[ACQ196_CH_MAP[ch]]/2;
 		}
 		memcpy(hb_ao+AO_CHAN, &tlatch, sizeof(unsigned));
 		if (sample == 0){
