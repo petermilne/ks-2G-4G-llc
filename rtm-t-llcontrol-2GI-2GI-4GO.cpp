@@ -91,6 +91,7 @@ const char* OUTROOT = "/mnt";
 #define TLATCH_OFFSET ((3 * 16) + LLCV2_STATUS_TLATCH)	/* longwords */
 static RTM_T_Device *dev1;
 static RTM_T_Device *dev2;
+static RTM_T_Device *aodev;
 
 int samples = 100;
 
@@ -108,7 +109,7 @@ int has_do32;
 #define AO_CHAN 32
 #define VO_LEN  (AO_CHAN*sizeof(short) + (has_do32?sizeof(unsigned):0))
 
-struct XLLC_DEF xllc_def;
+
 
 /*
  * WARNING: SERVICE_ macros snipped from llc.ko
@@ -171,32 +172,16 @@ short* init_ao()
  * returns buffer pa
  */
 {
-        char fname[80];
-        sprintf(fname, HB_FILE, AO_DEVNUM);
-        int fd = open(fname, O_RDWR);
-        if (fd < 0){
-                perror(fname);
-                exit(errno);
-        }
+        struct XLLC_DEF xllc_def;
 	xllc_def.pa = RTM_T_USE_HOSTBUF;
 	xllc_def.len = VO_LEN;
+	aodev = new RTM_T_Device(AO_DEVNUM, 1);
 
-	fprintf(stderr, "Hello World\n");
-        short* hb = (short *)mmap(0, HB_LEN, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-        if ((caddr_t)hb == (caddr_t)-1 ){
-                perror( "mmap" );
-                exit(errno);
-        }else{
-		fprintf(stderr, "AO host buffer mapping 0x%08x\n", hb);
-	}
-
-        if (ioctl(fd, AFHBA_START_AO_LLC, &xllc_def)){
+        if (ioctl(aodev->getDeviceHandle(), AFHBA_START_AO_LLC, &xllc_def)){
                 perror("ioctl AFHBA_START_AO_LLC");
                 exit(1);
-        }else{
-		fprintf(stderr, "AO_LLC set buffer pa: 0x%08x\n", xllc_def.pa);
-		return hb;
-	}
+        }
+        return static_cast<short*>(aodev->getHostBufferMapping(0));
 }
 
 
@@ -223,10 +208,9 @@ int llcontrol() {
 		auto_trigger(0);
 	}
 	u32* tlbuffer = (u32*)calloc(samples*2, sizeof(u32));
-	unsigned ao_buffer_pa;
 
 	mlockall(MCL_CURRENT);
-	fprintf(stderr, "Life is not simple\n");
+	fprintf(stderr, "Life is not simple about to go to lightspeed\n");
 
 	if (sched_fifo_priority){
 		goRealTime();
@@ -237,9 +221,14 @@ int llcontrol() {
 
 	short* ai1 = init_ai(dev1);
 	short* ai2 = init_ai(dev2);
+	int aifailcounts[2] = { 0 };
 	volatile u32* hbv = (volatile u32*)ai1;
+	// try this both ways ..  we should really test tl from both sources, but the code will be ugly
+	//volatile u32* hbv = (volatile u32*)ai2;
 	tlatch2 = hbv[TLATCH_OFFSET] = 0xdeadbeef;
 
+	ai1[95] = 0x1095;
+	ai2[95] = 0x2095;
 
 	for (int sample = 0; sample < samples; ++sample){
 		while ((tlatch1 = hbv[TLATCH_OFFSET]) == tlatch2){
@@ -260,6 +249,9 @@ int llcontrol() {
 		//fwrite(tlatches, sizeof(u32), 2, fp);
 		dbg(2, "%d %u", sample, tlatch);
 		tlatch2 = tlatch1;
+
+		if (ai1[95] == 0x1095) aifailcounts[0]++;
+		if (ai2[95] == 0x2095) aifailcounts[1]++;
 
 		/* copy : ai1+ai2->ao, tlatch->DO32 */
 		for (int ch = 1; ch <= AO_CHAN; ++ch){
@@ -283,6 +275,13 @@ int llcontrol() {
 	fwrite(tlbuffer, sizeof(u32), 2*samples, fp);
 	fclose(fp);
 	free(tlbuffer);
+
+	if (aifailcounts[0]){
+		fprintf(stderr, "aifailcounts[0] = %d\n", aifailcounts[0]);
+	}
+	if (aifailcounts[1]){
+		fprintf(stderr, "aifailcounts[1] = %d\n", aifailcounts[1]);
+	}
 	dbg(1, "99");
 }
 static void init_defaults(int argc, char* argv[])

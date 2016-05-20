@@ -1995,10 +1995,9 @@ int __init rtm_t_init_module(void)
 {
 	int rc;
 
-	info("%s %s %s %s\n%s",
+	info("%s %s %s\n%s",
 	     rtm_t_driver_name, rtm_t__driver_string,
-	     rtm_t__driver_version, 
-	     __DATE__,
+	     rtm_t__driver_version,
 	     rtm_t__copyright);
 
 	rtm_t_device_class = class_create(THIS_MODULE, "rtm-t");
